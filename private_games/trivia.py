@@ -10,8 +10,8 @@ def __init__():
     return
 
 
-async def play_game(thread: disnake.Thread, member: disnake.Member, optional: str | None = None,
-                    bot: disnake.ext.commands.Bot | None = None, uuid: str | None = None):
+async def play_game(thread: disnake.Thread, member: disnake.Member, uuid: str, optional: str | None = None,
+                    bot: disnake.ext.commands.Bot | None = None):
     # return await thread.send("Embed here!")
 
     answered = False
@@ -20,7 +20,7 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, optional: st
     @bot.listen("on_button_click")
     async def on_button_click(inter: disnake.MessageInteraction):
         nonlocal player_score, answered
-        if inter.component.custom_id.startswith(str(uuid)) and answered == False:
+        if inter.component.custom_id.startswith(uuid) and answered == False:
             answered = True
             data = inter.component.custom_id.split("_")
             q = data[1]
@@ -87,6 +87,6 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, optional: st
 
     embed.title = "Congratulations, Human! I, Mettaton, have won!"
     embed.description = f"However, as a reward for getting {player_score}/{len(questions)} of my questions correct, I'm awarding you with {player_score * 100} Tickets!"
-    message.edit(embed=embed, components=[])
+    await message.edit(embed=embed, components=[])
 
     # TODO: Make this give player_score*100 Tickets. Meagus.
