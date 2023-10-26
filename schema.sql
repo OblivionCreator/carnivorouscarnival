@@ -41,5 +41,5 @@ CREATE TABLE prizes (
 CREATE TABLE game_data (
   game TEXT NOT NULL PRIMARY KEY,
   user TEXT NOT NULL,
-  data TEXT,
-)
+  data TEXT
+);
