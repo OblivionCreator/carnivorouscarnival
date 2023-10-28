@@ -1,7 +1,4 @@
 import datetime
-import importlib
-import json
-import os
 import sys
 import time
 import typing
@@ -108,6 +105,7 @@ class GameStateManager:
         game_name: The game to start.
         optional_argument: An optional argument to pass to the game.
         """
+        self = gsm
         await self._start_new_public_game(game_name, optional_argument)
 
     @tasks.loop(minutes=config['public_game_interval'])
