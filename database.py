@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import typing
 import os
@@ -23,7 +24,9 @@ class Database:
     def __init__(self) -> None:
         if not os.path.exists(db_filename):
             make_database(db_filename)
+        prize_setup(db_filename)
         self.db = sqlite3.connect(db_filename)
+
 
     def get_tickets(self, user: disnake.Member) -> int:
         res, = self.db.execute(
@@ -116,6 +119,23 @@ class Database:
     def get_prize(self, id: int):
         return self.db.execute("select * from prizes where id = ?", (id,)).fetchall()[0]
 
+    def get_prize_wins_by_user(self, member: disnake.Member):
+        return self.db.execute("select * from prize_wins where user = ?", (member.id,)).fetchall()
+
+    def get_all_prizes(self):
+        name_list = self.db.execute("select name from prizes").fetchall()
+        final_list = []
+        for n in name_list:
+            t, = n
+            final_list.append(t)
+        return final_list
+
+    def add_new_prize(self, name, description, rarity, image, preview):
+        self.db.execute("INSERT INTO prizes (name, description, rarity, image) VALUES (?, ?, ?, ?)", (name, description, rarity, image, preview))
+        self.db.commit()
+        return
+
+
     def get_game_data(self, game: str, user: disnake.Member):
         return self.db.execute("select data from game_data where game = ? and user = ?", (game, user.id)).fetchone()
 
@@ -131,9 +151,27 @@ class Database:
                 "INSERT INTO game_data (game, user, data) VALUES (?, ?, ?)", (game, user.id, data))
         self.db.commit()
 
-
+    # Sets up the Prize Database from store.json
+    # This fucking code. DID NOT. Work. NO matter what we did.
+    # The database was ALWAYS locked.
+    # After an hour of troubleshooting, I said "fuck it" and asked ChatGPT to try and fix it instead
+    # ChatGPT changed it from 'db = sqlite3.connect(file)' to 'with sqlite3.connect(file) as db:' IN THEORY, this should be identical to what we already did.
+    # I have no fucking idea why that worked. But it did. So I am documenting my insanity here.
+def prize_setup(file: str):
+    try:
+        with sqlite3.connect(file) as db:
+            with open('store.json', 'r') as file:
+                raw_data = json.load(file)
+            cur = db.cursor()
+            cur.execute("DELETE FROM prizes")
+            for prize in raw_data:
+                db.execute("INSERT INTO prizes (id, name, description, rarity, image, preview) VALUES (?, ?, ?, ?, ?, ?)",
+                           (prize['id'], prize['name'], prize['description'], prize['rarity'], prize['image'], prize['preview']))
+    except sqlite3.OperationalError as e:
+        print(f"Error in prize_setup: {e}")
 def make_database(file: str):
     schema = open("schema.sql").read()
     db = sqlite3.connect(file)
     db.executescript(schema)
     db.commit()
+

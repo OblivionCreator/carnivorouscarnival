@@ -36,6 +36,7 @@ CREATE TABLE prizes (
   description TEXT NOT NULL,
   rarity INTEGER NOT NULL,
   image TEXT,
+  preview TEXT
 );
 
 CREATE TABLE game_data (
