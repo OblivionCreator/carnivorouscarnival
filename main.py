@@ -487,7 +487,7 @@ async def submit_session(session: str, game_name: str, score: str, reward: bool=
         if int(score) <= 2100:
             #Gently nerf Whack-A-Spamton, bodge until Orangestar nerfs it in that game specifically
             if game_name == "Whack-A-Spamton":
-                score = score * 0.75
+                score = int(float(score) * 0.75)
             db.award_tickets(int(score), typing.cast(disnake.Member,user), game_name)
         else:
             db.award_tickets(-9999999999, typing.cast(disnake.Member,user), game_name)
