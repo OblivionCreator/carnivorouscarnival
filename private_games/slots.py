@@ -1,5 +1,4 @@
 import random
-import statistics
 from typing import List
 
 import disnake
@@ -20,18 +19,46 @@ BET_STEP = 100
 STARTING_PLAYS = 5
 GAME_NAME = 'slots'
 
+# A mapping for "required min multiplier" to "prize rarity"
+prize_brackets = {
+    6.0: 3,
+    4.0: 2,
+    3.0: 1,
+    2.5: 0,
+}
+
+
 def ci(uid: str, str: str) -> str:
     return f"{GAME_NAME}:{uid}:{str}"
+
+
+def try_parse_int(s: str) -> int | None:
+    try:
+        return int(s)
+    except ValueError:
+        return None
 
 
 async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake.ext.commands.Bot, uid: str, optional: str | None = None):
     player_tickets = db.get_tickets(member)
 
+    desired_bet = try_parse_int(optional) if optional is not None else BASE_BET
+
+    if desired_bet is None or desired_bet < MIN_BET or desired_bet > MAX_BET:
+        db.consume_tokens(-1, member, 'slots', 'private')
+        return await thread.send(f'Your starting bet needs to be a number between {MIN_BET} and {MAX_BET}! You put "{optional}"! I refunded your token, try again with a different bet.')
+
+    if desired_bet > player_tickets:
+        db.consume_tokens(-1, member, 'slots', 'private')
+        return await thread.send(f'You tried to start with {desired_bet} tickets, but you only have {player_tickets} tickets! I refunded your token, come back with more tickets or try a lower bet!')
+
     if player_tickets < MIN_BET:
-        return await thread.send(f'You need at least {MIN_BET} tickets to play slots!')
+        db.consume_tokens(-1, member, 'slots', 'private')
+        return await thread.send(f'You need at least {MIN_BET} tickets to play slots! I refunded your token, come back when you have more tickets!')
 
     plays_left = STARTING_PLAYS
-    bet = min(BASE_BET, player_tickets)
+    bet = desired_bet if optional is not None else min(
+        BASE_BET, player_tickets)
     ticket_change = 0
 
     embed = disnake.Embed(
@@ -47,13 +74,15 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake
         text=f'{plays_left} play{"s" if plays_left != 1 else ""} left!')
 
     decrease_bet = disnake.ui.Button(
-        custom_id=ci(uid, 'increase_bet'), label=f"-{BET_STEP}", style=disnake.ButtonStyle.blurple)
+        custom_id=ci(uid, 'decrease_bet'), label=f"-{BET_STEP}", style=disnake.ButtonStyle.blurple if bet > MIN_BET else disnake.ButtonStyle.secondary, disabled=(bet <= MIN_BET))
     current_bet = disnake.ui.Button(
         custom_id=ci(uid, 'play_bet'), label=f"Play Bet: {bet} Tickets", style=disnake.ButtonStyle.green)
     increase_bet = disnake.ui.Button(
-        custom_id=ci(uid, 'decrease_bet'), label=f"+{BET_STEP}", style=disnake.ButtonStyle.blurple)
+        custom_id=ci(uid, 'increase_bet'), label=f"+{BET_STEP}", style=disnake.ButtonStyle.blurple if bet < MAX_BET else disnake.ButtonStyle.secondary, disabled=(bet >= MAX_BET))
     bet_row = disnake.ui.ActionRow(decrease_bet, current_bet, increase_bet)
     components = [bet_row]
+
+    prizes_won = []
 
     @bot.listen('on_button_click')
     async def on_button_click(interaction: disnake.MessageInteraction):
@@ -87,6 +116,15 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake
             multiplier = calculate_tickets_multiplier(points)
             won_tickets = round(bet * multiplier)
 
+            for bracket in prize_brackets:
+                if multiplier >= bracket:
+                    prize_rarity = prize_brackets[bracket]
+                    prize_id = db.award_random_prize(
+                        member, GAME_NAME, prize_rarity)
+                    prize_data = db.get_prize(prize_id)
+                    prizes_won.append(prize_data[1])
+                    break
+
             tickets_won_name = 'Tickets Won:'
 
             #  Get the index of the previous "Ticket Won" field, if any:
@@ -95,7 +133,11 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake
 
             change = won_tickets - bet
             ticket_change += change
-            tickets_won_line = f'You got {points} points (x{round(multiplier, 2)})!\nYou won {won_tickets} tickets!\n(You got {ticket_change} so far!)'
+            tickets_won_line = f'You got {points} points (x{round(multiplier, 2)})!\nYou won {won_tickets} tickets!\n(You made {ticket_change} net gain!)'
+
+            if len(prizes_won) > 0:
+                tickets_won_line += '\nYou also won: ' + \
+                    ', '.join(prizes_won) + '!'
 
             db.award_tickets(change, member, GAME_NAME)
             player_tickets = db.get_tickets(member)
