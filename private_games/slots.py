@@ -79,7 +79,11 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake
         custom_id=ci(uid, 'play_bet'), label=f"Play Bet: {bet} Tickets", style=disnake.ButtonStyle.green)
     increase_bet = disnake.ui.Button(
         custom_id=ci(uid, 'increase_bet'), label=f"+{BET_STEP}", style=disnake.ButtonStyle.blurple if bet < MAX_BET else disnake.ButtonStyle.secondary, disabled=(bet >= MAX_BET))
-    bet_row = disnake.ui.ActionRow(decrease_bet, current_bet, increase_bet)
+    max_bet = disnake.ui.Button(
+        custom_id=ci(uid, 'max_bet'), label=f"Max Bet!", style=disnake.ButtonStyle.blurple if bet < MAX_BET else disnake.ButtonStyle.secondary, disabled=(bet >= MAX_BET))
+    bet_row = disnake.ui.ActionRow(
+        decrease_bet, current_bet, increase_bet, max_bet)
+
     components = [bet_row]
 
     prizes_won = []
@@ -163,6 +167,9 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake
             if bet > MAX_BET:
                 bet = MAX_BET
 
+        if interaction.component.custom_id == max_bet.custom_id:
+            bet = MAX_BET
+
         if bet <= MIN_BET or plays_left <= 0:
             decrease_bet.style = disnake.ButtonStyle.grey
             decrease_bet.disabled = True
@@ -173,9 +180,13 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake
         if bet >= MAX_BET or plays_left <= 0:
             increase_bet.style = disnake.ButtonStyle.grey
             increase_bet.disabled = True
+            max_bet.style = disnake.ButtonStyle.grey
+            max_bet.disabled = True
         else:
             increase_bet.style = disnake.ButtonStyle.blurple
             increase_bet.disabled = False
+            max_bet.style = disnake.ButtonStyle.blurple
+            max_bet.disabled = False
 
         if bet > player_tickets or plays_left <= 0:
             current_bet.style = disnake.ButtonStyle.grey
