@@ -6,7 +6,7 @@ Developed by: OblivionCreator, Meagus, Orangestar, Atora
 
 Art By: Orangestar, Zeyphr
 
-    Carnivorous Carnival Discord Bod
+    Carnivorous Carnival Discord Bot
     Copyright (C) 2023 OblivionCreator, Meagus, Orangestar, Atora, Zeyphr
 
     This program is free software: you can redistribute it and/or modify
