@@ -13,9 +13,7 @@ Orangestar
 Atora
 
 Art By:
-
 Orangestar
-
 Zeyphr
 
     Carnivorous Carnival Discord Bod
