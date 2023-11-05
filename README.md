@@ -2,19 +2,9 @@
 
 The bot used in r/Undertale's 4th Annual Halloween Event
 
-Developed by:
+Developed by: OblivionCreator, Meagus, Orangestar, Atora
 
-OblivionCreator
-
-Meagus
-
-Orangestar
-
-Atora
-
-Art By:
-Orangestar
-Zeyphr
+Art By: Orangestar, Zeyphr
 
     Carnivorous Carnival Discord Bod
     Copyright (C) 2023 OblivionCreator, Meagus, Orangestar, Atora, Zeyphr
