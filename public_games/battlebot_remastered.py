@@ -674,14 +674,14 @@ async def play_game(channel, bot2, optional_argument=None):
             for player in player_mercy:
                 c_m = await bot.get_or_fetch_user(player)
                 addCandies(c_m, reg_c)
-                current_recruits = db.get_game_data("Battlebot", c_m)
+                current_recruits = json.loads(db.get_game_data("Battlebot", c_m))
                 if current_recruits is None:
                     current_recruits = {}
                 if mname in current_recruits:
                     current_recruits[mname] = current_recruits[mname] + 1
                 else:
                     current_recruits[mname] = 1
-                db.set_game_data("Battlebot", c_m, current_recruits)
+                db.set_game_data("Battlebot", c_m, json.dumps(current_recruits))
 
     else:
         fight_average.append(0)
