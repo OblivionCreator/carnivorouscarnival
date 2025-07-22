@@ -2,6 +2,7 @@ import asyncio
 import random
 import time
 import database
+import json
 
 db = database.Database()
 import disnake.ext.commands
@@ -674,9 +675,11 @@ async def play_game(channel, bot2, optional_argument=None):
             for player in player_mercy:
                 c_m = await bot.get_or_fetch_user(player)
                 addCandies(c_m, reg_c)
-                current_recruits = json.loads(db.get_game_data("Battlebot", c_m))
+                current_recruits = db.get_game_data("Battlebot", c_m)
                 if current_recruits is None:
                     current_recruits = {}
+                else:
+                    current_recruits = json.loads(current_recruits)
                 if mname in current_recruits:
                     current_recruits[mname] = current_recruits[mname] + 1
                 else:
