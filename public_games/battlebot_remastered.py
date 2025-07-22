@@ -26,7 +26,7 @@ enemy_list = {
     '<:napstablook:278804489639690241>': {'name': 'a friend',
                                           'description': 'This ghosts idea of friendship seems to be a fight to the death. Perhaps it\'s time to set them right. By killing them.'},
     '<:mimic:902037857269608478>': {'name': 'Mimic',
-                                    'description': 'An ordinary chest! Why don\'t you go closer to see if there\'s any Tickets inside..?'},
+                                    'description': 'An ordinary chest! Why don\'t you go closer to see if there\'s any POINTs inside..?'},
     ':eggplant:': {'name': 'Suspicious Plant',
                    'description': 'For legal reasons, you are not allowed to say what this vegetable resembles.'},
     '🌜🌚🌛': {'name': 'Broken Moon',
@@ -154,7 +154,7 @@ def getFlavour(monster):
         f'{monster} forgets what day it is!',
         f'{monster} thinks this is a prank..?',
         f'{monster} jumpscares you!',
-        f'{monster} readjusts their Halloween mask.',
+        f'{monster} readjusts their ~~Halloween~~ July mask.',
         f'{monster} befriends your mom!',
         f'{monster} wavedashes towards you!',
         f'{monster} shuffles towards you!',
@@ -165,7 +165,7 @@ def getFlavour(monster):
         f'Wild {monster} appeared!',
         f'You were accosted by {monster}!',
         f'{monster} has come to make an announcement.',
-        f'{monster} has some Kromer!',
+        f'{monster} has some POINTs!',
         f'{monster}, on the scene!',
         f'There\'s a {monster} among us!',
         f'{monster} broke TOS!',
@@ -264,19 +264,52 @@ userList = []
 turn = False
 loss = False
 fight_average = [0]
-
+player_mercy = []
+mercy_blacklist = []
+spare_min = 1 # This will be set to 50% of the participants of the previous battle.
 
 async def attackHandler(interaction):
     global monster_HP, hitpoints, lastAttacker
     if monster_HP > 0:
+
         m_dam, p_hp = await attack(interaction, hitpoints[interaction.author.id])
+
+        # removes mercy
+        if interaction.author.id in player_mercy:
+            player_mercy.remove(interaction.author.id)
+            mercy_blacklist.append(interaction.author.id)
+
         hitpoints[interaction.author.id] = p_hp
         monster_HP = monster_HP - m_dam
+
     else:
         sadEmbed = disnake.Embed(title='Too Late!',
                                  description='The monster has already been killed so you cannot attack it!')
-        interaction.send(embed=sadEmbed, ephemeral=True)
+        await interaction.send(embed=sadEmbed, ephemeral=True)
 
+async def mercyHandler(interaction):
+    # the player has chosen to give mercy
+    global player_mercy, spare_min
+
+    if interaction.author.id in player_mercy:
+        #await interaction.send("You have already shown mercy!", ephemeral=True)
+        sadEmbed = disnake.Embed(title="You've already shown mercy!",
+                                 description='You are already giving the monster mercy, and cannot give it again!')
+        await interaction.send(embed=sadEmbed, ephemeral=True)
+        return
+    if interaction.author.id in mercy_blacklist:
+        sadEmbed = disnake.Embed(title='Betrayed!',
+                                 description='You have betrayed the monster and cannot give mercy anymore!')
+        await interaction.send(embed=sadEmbed, ephemeral=True)
+        return
+
+    # the player has not shown mercy yet
+    player_mercy.append(interaction.author.id)
+
+    happyEmbed = disnake.Embed(title='Show some MERCY, human!', description=f"You choose to show mercy to the monster.\nThey are currently { int((len(player_mercy) / spare_min) * 100) }% spared", color = disnake.Colour.yellow())
+    happyEmbed.set_footer(text="If you betray your mercy, they won't trust you again!")
+    await interaction.send(embed=happyEmbed, ephemeral=True)
+    return
 
 async def candyHandler(interaction):
     global hitpoints
@@ -288,27 +321,40 @@ async def candyHandler(interaction):
 
     reward = 0
     dead_players = []
+    injured_players = []
 
     for i in hitpoints:
         if hitpoints[i] == 0:
             dead_players.append(i)
+        if hitpoints[i] < 100:
+            injured_players.append(i)
 
-    if len(dead_players) == 0:
+    injured_players.sort()
+
+    if len(dead_players) == 0 and len(injured_players) == 0:
         cEmbed = disnake.Embed(title=f'You try to pick up the fallen..',
-                                description=f'Unfortunately, there was nobody to revive!',
+                                description=f'Fortunately, there was nobody to revive!',
                                 color=0x388500)
         userList.remove(interaction.author.id)
-    else:
+    elif len(dead_players) > 0:
         player = random.choice(dead_players)
         guild = interaction.guild
         user = guild.get_member(player)
-        cEmbed = disnake.Embed(title=f'You spend a turn healing {user.name}.',
+        cEmbed = disnake.Embed(title=f'You spend a turn reviving {user.name}.',
                                description=f'{user.name} (<@{player}>) was healed by 20 health!',
                                color=0x65EA00)
         hitpoints[player] = 20
         deadlist.remove(player)
         if player not in userList:
             userList.append(player)
+    else: # Nobody is dead and we know at least one person is injured, so let's heal them
+        player = injured_players[0]
+        guild = interaction.guild
+        user = guild.get_member(player)
+        cEmbed = disnake.Embed(title=f'You spend a turn healing {user.name}.',
+                               description=f'{user.name} (<@{player}>) was healed by 35 health!',
+                               color=0x65EA00)
+        hitpoints[player] = hitpoints[player] + 35
 
     await interaction.send(embed=cEmbed, ephemeral=True)
 
@@ -318,20 +364,29 @@ async def healHandler(interaction):
 
 
 async def play_game(channel, bot2, optional_argument=None):
-    global old_userList, deadlist, old_deadlist, battleOngoing, hitpoints, monster_HP, lastAttacker, userList, turn, loss, dmgDone, fight_average, action_to_process, bot
+    global old_userList, deadlist, old_deadlist, battleOngoing, hitpoints, monster_HP, lastAttacker, userList, turn, loss, dmgDone, fight_average, action_to_process, bot, player_mercy, mercy_blacklist, spare_min
     bot=bot2
-
-    old_deadlist = deadlist
-    deadlist = []
 
     if battleOngoing:
         return
+
+    old_deadlist = deadlist
+    deadlist = []
 
     hitpoints = {}
     dmgDone = {}
     monster, info = getEnemy()
     mname = info['name']
     flavour = getFlavour(mname)
+
+    # mercy handling
+    spare_min = int(len(old_userList) / 2)
+    if spare_min < 5:
+        spare_min = 5
+    spare_min = 1
+
+    player_mercy = []
+    mercy_blacklist = []
 
     monster_HP_MAX = round(((len(old_userList)) * 400))
 
@@ -356,8 +411,8 @@ async def play_game(channel, bot2, optional_argument=None):
     if mname == 'Sans':
         monster_HP_MAX = 1
 
-    if channel.id == 1147388785269669908:
-        monster_HP_MAX = 100
+    if channel.id == 774573426689048586:
+        monster_HP_MAX = 1000
 
     monster_HP = monster_HP_MAX
     turnTime = 60
@@ -372,16 +427,19 @@ async def play_game(channel, bot2, optional_argument=None):
 
     message = await channel.send(embed=embed, components=[
         disnake.ui.ActionRow(
-            disnake.ui.Button(label="🗡️ Attack Enemy", custom_id=f"attack_enemy", style=disnake.Color(4),
+            disnake.ui.Button(label="🗡️ Attack", custom_id=f"attack_enemy", style=disnake.Color(4),
                               disabled=False),
-            disnake.ui.Button(label="💊 Heal Yourself", custom_id=f"heal_player", style=disnake.Color(3),
-                              disabled=False))])
+            disnake.ui.Button(label="💊 Heal", custom_id=f"heal_player", style=disnake.Color(1),
+                              disabled=False),
+            disnake.ui.Button(label="🕊️ Mercy", custom_id=f"mercy", style=disnake.Color(3),
+                              disabled=False)
+        )])
 
     @bot.listen("on_button_click")
     async def on_battle_press(interaction):
         global userList, hitpoints, action_to_process
 
-        if interaction.component.custom_id != 'attack_enemy' and interaction.component.custom_id != 'heal_player' and interaction.component.custom_id != 'throw_candy':
+        if interaction.component.custom_id != 'attack_enemy' and interaction.component.custom_id != 'heal_player' and interaction.component.custom_id != 'mercy':
             return
 
         if turn is False and battleOngoing is True:
@@ -413,9 +471,12 @@ async def play_game(channel, bot2, optional_argument=None):
         if interaction.component.custom_id == 'attack_enemy' and battleOngoing is True:
             await attackHandler(interaction)
         elif interaction.component.custom_id == 'heal_player' and battleOngoing is True:
-            hitpoints[interaction.author.id] = await healHandler(interaction)
-        elif interaction.component.custom_id == 'throw_candy' and battleOngoing is True:
-            await candyHandler(interaction)
+            if hitpoints[interaction.author.id] < 100:
+                hitpoints[interaction.author.id] = await healHandler(interaction)
+            else:
+                await candyHandler(interaction)
+        elif interaction.component.custom_id == 'mercy' and battleOngoing is True:
+            await mercyHandler(interaction)
         else:
             await interaction.response.send_message("There's not an ongoing battle!", ephemeral=True)
             userList = []
@@ -424,7 +485,7 @@ async def play_game(channel, bot2, optional_argument=None):
 
     while battleOngoing:
         userList = []
-        if monster_HP <= 0:
+        if monster_HP <= 0 or len(player_mercy) >= spare_min:
             turn = False
             battleOngoing = False
             victory = True
@@ -441,10 +502,13 @@ async def play_game(channel, bot2, optional_argument=None):
                     await message.edit(
                         embed=await newEmbed(flavour, monster, f'<t:{battleTime + 62}:R>', monster_HP,
                                        monster_HP_MAX), components=[
-                            disnake.ui.ActionRow(disnake.ui.Button(label="🗡️ Attack Enemy", custom_id=f"attack_enemy",
+                            disnake.ui.ActionRow(disnake.ui.Button(label="🗡️ Attack", custom_id=f"attack_enemy",
                                                                    style=disnake.Color(4), disabled=False),
-                                                 disnake.ui.Button(label="💊 Heal Yourself", custom_id=f"heal_player",
-                                                                   style=disnake.Color(3), disabled=False))])
+                                                 disnake.ui.Button(label="💊 Heal", custom_id=f"heal_player",
+                                                                   style=disnake.Color(1), disabled=False),
+                                                 disnake.ui.Button(label="🕊️ Mercy", custom_id=f"mercy",
+                                                                   style=disnake.Color(3),
+                                                                   disabled=False))])
                 except Exception as e:
                     print("Threw Exception! ", e)
                 action_to_process = False
@@ -457,9 +521,11 @@ async def play_game(channel, bot2, optional_argument=None):
         if monster_HP > 0 and turnCount < 10:
             await message.edit(components=[
                 disnake.ui.ActionRow(
-                    disnake.ui.Button(label="🗡️ Attack Enemy", custom_id=f"attack_enemy", style=disnake.Color(4),
+                    disnake.ui.Button(label="🗡️ Attack", custom_id=f"attack_enemy", style=disnake.Color(4),
                                       disabled=True),
-                    disnake.ui.Button(label="💊 Heal Yourself", custom_id=f"heal_player", style=disnake.Color(3),
+                    disnake.ui.Button(label="💊 Heal", custom_id=f"heal_player", style=disnake.Color(1),
+                                      disabled=True),
+                    disnake.ui.Button(label="🕊️ Mercy", custom_id=f"mercy", style=disnake.Color(3),
                                       disabled=True))])
             attacking = True
             attacked = {}
@@ -525,9 +591,11 @@ async def play_game(channel, bot2, optional_argument=None):
             # noinspection PyTypeChecker
             await message.edit(embed=embed, components=[
                 disnake.ui.ActionRow(
-                    disnake.ui.Button(label="🗡️ Attack Enemy", custom_id=f"attack_enemy", style=disnake.Color(4),
+                    disnake.ui.Button(label="🗡️ Attack", custom_id=f"attack_enemy", style=disnake.Color(4),
                                       disabled=True),
-                    disnake.ui.Button(label="💊 Heal Yourself", custom_id=f"heal_player", style=disnake.Color(3),
+                    disnake.ui.Button(label="💊 Heal", custom_id=f"heal_player", style=disnake.Color(1),
+                                      disabled=True),
+                    disnake.ui.Button(label="🕊️ Mercy", custom_id=f"mercy", style=disnake.Color(3),
                                       disabled=True))])
             await asyncio.sleep(5)
         action_to_process = True
@@ -537,41 +605,84 @@ async def play_game(channel, bot2, optional_argument=None):
             turn = True
     await message.edit(components=None)
     if victory:
+
+        if len(player_mercy) >= spare_min:
+            spared = True
+        else:
+            spared = False
+
         fight_average.append(1)
-        msg = f"{mname} was defeated!"
+        if spared: str_wintype = "spared";
+        else: str_wintype = "defeated"
+        msg = f"{mname} was {str_wintype}!"
         vEmbed = await newEmbed(msg, monster, 0, 0, monster_HP_MAX, actions=False)
         reg_c = random.randrange(300, 650)
 
-        bestAttacker = None
-        tmpDMG = 0
-        tmpUSR = 0
-        for i in dmgDone:
-            if dmgDone[i] > tmpDMG and lastAttacker is not i:
-                tmpDMG = dmgDone[i]
-                tmpUSR = i
-        user2 = await bot.get_or_fetch_user(tmpUSR)
+        if not spared:
+            bestAttacker = None
+            tmpDMG = 0
+            tmpUSR = 0
+            for i in dmgDone:
+                if dmgDone[i] > tmpDMG and lastAttacker is not i:
+                    tmpDMG = dmgDone[i]
+                    tmpUSR = i
+            user2 = await bot.get_or_fetch_user(tmpUSR)
 
-        if tmpUSR != 0:
-            user = await bot.get_or_fetch_user(lastAttacker)
+            if tmpUSR != 0:
+                user = await bot.get_or_fetch_user(lastAttacker)
 
-            draw = random.randint(1, 20)
-            if draw <= 11:
-                prize = db.award_random_prize(user2, "Battlebot", 1)
-            elif draw <= 19:
-                prize = db.award_random_prize(user2, "Battlebot", 2)
+                draw = random.randint(1, 20)
+                if draw <= 11:
+                    prize = db.award_random_prize(user2, "Battlebot", 1)
+                elif draw <= 19:
+                    prize = db.award_random_prize(user2, "Battlebot", 2)
+                else:
+                    prize = db.award_random_prize(user2, "Battlebot", 3)
+                prize_data = db.get_prize(prize)
+
+                vEmbed.add_field(name='Monster Defeated',
+                                    value=f'{user.name} got the final hit! They have been awarded {reg_c} POINTs!\n{user2} did the most damage, with {tmpDMG} damage! They have been awarded with a {prize_data[1]}', inline=False)
             else:
-                prize = db.award_random_prize(user2, "Battlebot", 3)
-            prize_data = db.get_prize(prize)
+                user = await bot.get_or_fetch_user(lastAttacker)
+                vEmbed.add_field(name='Monster Defeated',
+                                 value=f'{user.name} got the final hit! They have been awarded {reg_c} POINTs!',
+                                 inline=False)
+            loss = False
+            addCandies(user, reg_c)
+        else: # They spared the monster!
+            reg_c = int(reg_c / 2)
 
-            vEmbed.add_field(name='Monster Defeated',
-                                value=f'{user.name} got the final hit! They have been awarded {reg_c} Tickets!\n{user2} did the most damage, with {tmpDMG} damage! They have been awarded with a {prize_data[1]}', inline=False)
-        else:
-            user = await bot.get_or_fetch_user(lastAttacker)
-            vEmbed.add_field(name='Monster Defeated',
-                             value=f'{user.name} got the final hit! They have been awarded {reg_c} Tickets!',
-                             inline=False)
-        loss = False
-        addCandies(user, reg_c)
+            if random.randint(1, 100) >= 75: # someone gets a prize!
+                lucky_player = random.choice(player_mercy)
+
+                user2 = await bot.get_or_fetch_user(lucky_player)
+
+                draw = random.randint(1, 20)
+                if draw <= 11:
+                    prize = db.award_random_prize(user2, "Battlebot", 1)
+                elif draw <= 19:
+                    prize = db.award_random_prize(user2, "Battlebot", 2)
+                else:
+                    prize = db.award_random_prize(user2, "Battlebot", 3)
+                prize_data = db.get_prize(prize)
+                prize_str = f"\n{user2.name} was given a {prize_data[1]} for their mercy!"
+            else:
+                prize_str = ""
+            vEmbed.add_field(name='Monster Spared', value=f'{mname} was spared!\nAll players who showed MERCY have been rewarded with {reg_c} POINTs and have successfully recruited {mname}!{prize_str}', inline=False)
+            loss = False
+
+            for player in player_mercy:
+                c_m = await bot.get_or_fetch_user(player)
+                addCandies(c_m, reg_c)
+                current_recruits = db.get_game_data("Battlebot", c_m)
+                if current_recruits is None:
+                    current_recruits = {}
+                if mname in current_recruits:
+                    current_recruits[mname] = current_recruits[mname] + 1
+                else:
+                    current_recruits[mname] = 1
+                db.set_game_data("Battlebot", c_m, current_recruits)
+
     else:
         fight_average.append(0)
         msg = f"{mname} got away!"
@@ -584,6 +695,7 @@ async def play_game(channel, bot2, optional_argument=None):
     old_userList = hitpoints.items()
     bot.remove_listener(on_battle_press)
 
+
 async def attack(action, player_hp):
     global dmgDone, lastAttacker
     lastAttacker = action.author.id
@@ -592,10 +704,14 @@ async def attack(action, player_hp):
     attackHigh = 175
     attackDmg = random.randrange(attackLow, attackHigh)
 
-    if player_hp < 50:
-        attackDmg = int(attackDmg * 1.25)
-    elif player_hp < 25:
+    if player_hp < 25:
         attackDmg = int(attackDmg * 1.35)
+    elif player_hp < 50:
+        attackDmg = int(attackDmg * 1.25)
+
+    # extra damage if mercy...
+    if action.author.id in player_mercy:
+        attackDmg = int(attackDmg * 1.50) # wowzers
 
     n_C = random.randrange(30, 80)
 
@@ -603,7 +719,6 @@ async def attack(action, player_hp):
         rareChance = 80
     else:
         rareChance = 98
-
 
     c_C = getCandies(action.author)
 
@@ -621,7 +736,7 @@ async def attack(action, player_hp):
     if crit >= 95:
         attackDmg = attackDmg * 3
         pmEmbed = disnake.Embed(title="You attack the enemy!", color=0xFFD800)
-        pmEmbed.description = f"**CRITICAL HIT!** You deal {attackDmg} damage!\nYou won {n_C} Tickets for your mighty blow!"
+        pmEmbed.description = f"**CRITICAL HIT!** You deal {attackDmg} damage!\nYou won {n_C} POINTs for your mighty blow!"
         player_hp = player_hp + HPLoss
         pmEmbed.set_image(
             url='https://media.discordapp.net/attachments/669077343482019870/902003156924379156/tumblr_m0biocwpJC1rnm2iko1_500.png')
@@ -637,7 +752,7 @@ async def attack(action, player_hp):
         else:
             dmgText = f', but take {HPLoss}'
 
-        pmEmbed.description = f'You deal {attackDmg} damage{dmgText} damage in return.\nYou currently have **{player_hp}/100** health remaining.\nYou were awarded {n_C} Tickets for your attack.'
+        pmEmbed.description = f'You deal {attackDmg} damage{dmgText} damage in return.\nYou currently have **{player_hp}/100** health remaining.\nYou were awarded {n_C} POINTs for your attack.'
     await action.send(embed=pmEmbed, ephemeral=True)
 
     addCandies(action.author, n_C)

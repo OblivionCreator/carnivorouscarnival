@@ -236,7 +236,7 @@ def generate_slots_roll() -> SlotsRoll:
     )
 
 
-blank = '<:blank:1168063240664797194>'
+blank = '<:blank:1395861796841328720>'
 
 offset_symbols = [
     '↘️ ',  # 0
