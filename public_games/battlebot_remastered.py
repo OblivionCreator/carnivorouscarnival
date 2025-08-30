@@ -3,121 +3,12 @@ import random
 import time
 import database
 import json
+import csv
 
 db = database.Database()
 import disnake.ext.commands
 
 action_to_process = False
-
-enemy_list = {
-    ':ghost: :crossed_swords: :ghost:': {'name': 'Dueling Ghouls',
-                                         'description': 'They seem to be more focused on each other than on you...'},
-    ':merman::skateboard::merman:': {'name': 'Merbros',
-                                     'description': 'You\'re not sure how they are standing, but they\'re both on the board, each kicking off one side.'},
-    '<a:krisnite:508437089130512416> <:susieSlap:890360533566492712>': {'name': 'KRIS WHERE THE FUCK ARE WE?',
-                                                                        'description': 'They seem to be lost, but have decided to attack you anyway. So much for asking for directions.'},
-    '🦷': {'name': 'Trickor-Teeth', 'description': 'It doesn\'t seem to believe in dentists. Or hygiene. '},
-    '🎃 🍮': {'name': 'Jack-O-Flantern', 'description': 'Doesn\'t emit light, just a sickly-sweet smell.'},
-    '👹 🐎': {'name': 'Poni', 'description': 'It is neither little, nor under your ownership.'},
-    '🐌': {'name': 'Pale Snale', 'description': 'Actually prefers a good lager.'},
-    '🕴️🦞🚬 🕴️': {'name': 'The Lobfather', 'description': 'Mobster with a lobster'},
-    '<:wormie:887839709672407072>': {'name': 'Wormie',
-                                     'description': 'You can\'t tell if that\'s an eye or a nose, but it\'s horrifying either way.'},
-    ':hole:': {'name': 'A Hole', 'description': 'Bottomless? Maybe, but I wouldn\'t try to find out myself.'},
-    '<:napstablook:278804489639690241>': {'name': 'a friend',
-                                          'description': 'This ghosts idea of friendship seems to be a fight to the death. Perhaps it\'s time to set them right. By killing them.'},
-    '<:mimic:902037857269608478>': {'name': 'Mimic',
-                                    'description': 'An ordinary chest! Why don\'t you go closer to see if there\'s any POINTs inside..?'},
-    ':eggplant:': {'name': 'Suspicious Plant',
-                   'description': 'For legal reasons, you are not allowed to say what this vegetable resembles.'},
-    '🌜🌚🌛': {'name': 'Broken Moon',
-            'description': 'It broke apart to reveal that there was a moon inside the moon all along!'},
-    '<:madDummyBro:764589495379034162>': {'name': 'Bruh Dummy',
-                                          'description': 'The long-lost cousin of someone you think you met once. Don\'t scare it away again!'},
-    '🙊 🙊': {'name': 'Snickers',
-            'description': 'These monkeys seem to be having far too much fun considering the circumstances.'},
-    ':green_square: :skull_crossbones: :green_square:': {'name': 'Dancing Greenscreen Skeleton',
-                                                         'description': "Thinks you're in for a bad chroma-key"},
-    ':race_car: :police_car:': {'name': 'Hot Pursuit', 'description': 'They feel a need... a need for...'},
-    ':flag_gb:': {'name': 'The British Empire',
-                  'description': 'You\'re surprised there\'s still enough government left to fight you.'},
-    ':heart:': {'name': 'DETERMINATION',
-                'description': 'Fighting the abstract concept of determination fills you with determination'},
-    '<:botsanstroll:902416763478761474>': {'name': '\"Sans\"', 'description': 'Thinks you\'re in for a bad troll.'},
-    '<:sansbadtime:278804488889040896>': {'name': 'Sans', 'description': 'Thinks you\'re in for a bad fight.'},
-    ':red_circle::knife:     :blue_circle:': {'name': 'Crewmates',
-                                              'description': 'Several are pointing fingers at you and shouting accusations while another runs around stabbing various other ones in the back.'},
-    ':hedgehog: :ring: :ring: :ring:': {'name': 'Sonic The Hedgehog',
-                                        'description': 'What he lacks in good games, he has in fandom. Careful before the Sonic Mania gets to you!'},
-    ':tophat:\n:bat:': {'name': 'Bat in a Hat', 'description': 'A bat in a hat and that is that.'},
-    '💉🌻': {'name': 'The Experiment',
-           'description': 'An experiment gone-wrong. He insists he has a name, but you care not for his feelings, for he has none.'},
-    ':adhesive_bandage::head_bandage:': {'name': 'DIY Mummy', 'description': 'Available in all good hardware stores.'},
-    '⚱️🚬': {'name': 'Pot Smoker', 'description': 'We\'re not sure what happens when you smoke ceramics either.'},
-    ':nut_and_bolt::man_zombie::nut_and_bolt:': {'name': 'It\'s Alive!',
-                                                 'description': 'This isn\'t the monster. Frankenstein was the real monster. But it\'s still going to attack you anyway, so keep up your guard!'},
-    ':peach:': {'name': 'Suspicious Fruit', 'description': 'Presently resides in another castle.'},
-    ':gun::monkey_face:': {'name': 'Monkioso', 'description': 'The lobster is their cousin.'},
-    ':skull::skull::adhesive_bandage::skull::skull:': {'name': 'Skeleton Band',
-                                                       'description': 'They all seem to be held together by a large band-aid, moving as a group to attack you as one!'},
-    '<:crow1:903391005246619658><:crow2:903391005108215868><:crow3:903391005053698088><:crow4:903391005045309480><:crow5:903391004953042945><:crow6:903391004776882210>': {
-        'name': 'A Murder of Crows', 'description': 'Having an identity crisis.'},
-    '🥜 🛒': {'name': 'Nutdealer', 'description': 'Also a bit of a lute nerd.'},
-    '<:spamdude:903964210533388369>': {'name': '{{NUMBER 2 RATED SALESMAN 1997}}',
-                                       'description': 'The flavour text keeps getting caught in your spam filter.'},
-    '🐀🐀🐀🐀': {'name': 'Rat King',
-             'description': 'In another world, perhaps one of them would be a chef. Target the big one - he\'s making the rules!'},
-    '💀''🌀': {'name': 'funny skeleton', 'description': 'Thinks you\'re in for a bad time.'},
-    '🦊🚁': {'name': 'Tails the Fox', 'description': 'Child Genius who didn\'t think to bring a weapon to this duel.'},
-    '🔶': {'name': 'Orange Star', 'description': 'We haven\'t told him what stars look like.'},
-    '👨🐱👩🚀': {'name': 'Team Rocket', 'description': 'Surrender now, or prepare for a fight.'},
-    '🪩🕺': {'name': 'Saturday Fright Fever',
-           'description': 'You both agree Friday is the worst day of the week, but they\'re still feeling up for a fight!'},
-    '🫲🪬🫱': {'name': 'The Handy Man', 'description': 'Wouldn\'t mind another if you\'re interested.'},
-    '🧌 🧙‍♂️⚔': {'name': '\"You Encounter Some Undertale Fans In The Brush...\"',
-                'description': 'They seem to think that this is some sort of game. Show them your might!'},
-    '🫙': {'name': 'Forbidden Container',
-          'description': 'You really don\'t want to know. Destroy it to keep the knowledge from future generations!'},
-    '🫳 🏀': {'name': 'The Bron Jame', 'description': 'It\'s not playing ball.'},
-    '🛵🐋': {'name': 'Moby-lity scooter', 'description': 'Seems like you\'re in for a whale of a time.'},
-    '🧌📔': {'name': 'Lore Goblins', 'description': 'About to throw the book at you.'},
-    '<:sansBadTime:278804488889040896> :door: <:sansWink:278804488897429504>': {'name': 'hall o\' ween',
-                                                                                'description': 'Offers a spooky time'},
-    '🤓📖': {'name': 'Pedantic Peddler',
-           'description': '\"uhm akshually didn\'t you guysh do this event LAST year??\"\nHe may be right, but show him what-for anyway!'},
-    '🙈🙉🙊': {'name': 'Mystic Monkeys',
-            'description': 'When one of these monkeys changes the position of their hands, the others cycle around to match...'},
-    '🏒♞🥍': {'name': 'The Sunday Knight Sports Game',
-            'description': 'This knight is armed to the teeth with various sports equipment. Watch out for flying spheres!'},
-    '💽📼🎞️': {'name': 'Attack of the 30-Year-Old Media Formats!',
-             'description': 'They swear they\'re not outdated, but they can\'t seem to find something to play themselves in.'},
-    '🍞👻': {'name': 'Toast Ghost', 'description': 'Haunting is his bread and butter.'},
-    '👖👻': {'name': 'Pants\'em Phantom',
-           'description': 'Keep an eye on your pants, or he\'ll pull \'em down for bants!'},
-    '<:sink:1033110747871465512>🚽🛀': {'name': 'Drain Gang', 'description': 'This fight is sure to be draining.'},
-    '📦🦊': {'name': 'Box Fox',
-           'description': 'This anthropomorph intermittently transmogrifies into an immobile cube. Surely, some designer thought it was a good idea.'},
-    '🕵️🕵️🕵️🕵️🕵️🕵️🕵️🕵️🕵️🕵️🕵️🕵️🕵️🕵️': {'name': 'The Convocation',
-                                     'description': 'Appearing from beyond the shadows, you\'re sure this is a reference to something. Perhaps it\'s time for them to ride home.'},
-    '🤘🤖🤘': {'name': 'Death Metal', 'description': 'It\'s edgy! Literally! Don\'t get cut!'},
-    '🥳🎉': {'name': 'Premature Victory',
-           'description': 'It\'s already cutting a cake labelled \"Congrats on winning the fight!\"'},
-    '🫥👅': {'name': 'Cut and Taste',
-           'description': 'Left in its wake is a trail of bland apples, and one overripe one in its hand...'},
-    '🍟🍟': {'name': 'Small Potatoes',
-           'description': 'They keep asking "do you think you\'re better than me?" No matter your answer, they get more angry!'},
-    '<:sansta:1022652448730529913>🎄': {'name': 'Hey, wait a minute...', 'description': 'IT\'S F%&#ING OCTOBER'},
-    '<:tinyGoat:746489342700290108><:tinySheep:746488928432816209>': {'name': 'Comically Small Ruminants',
-                                                                      'description': 'One is ramming lightly into your leg. The other is trying to get a vantage point with a nearby stepladder.'},
-    '<:tobyDog:278804489383706624>': {'name': 'Tony Fox', 'description': 'Claims to be a professional scater.'},
-    '💪🐉': {'name': 'Beefy-Armed Dragon', 'description': 'Legend calls him "The Burninator."'},
-    '🏊‍♂️♨️🏊‍♂️  ': {'name': 'Two Bros, Chilling In A Hot Tub',
-                     'description': 'Five feet apart, because they\'re Not Gay™️.'},
-    '<:smol:906983749495959573>': {'name': 'Smol Bot',
-                                   'description': 'Still recovering from her wounds, but she\'s still putting up a fight!'},
-    ':knife::cook:': {'name': 'Chefioso', 'description': 'The secret ingredient is crime.'}
-}
-
 
 def getCandies(user: disnake.Member):
     db.get_tickets(user)
@@ -126,12 +17,60 @@ def getCandies(user: disnake.Member):
 def addCandies(user, n_candy):
     db.award_tickets(n_candy, user, "Battle")
 
+enemy_list = {}
 
 def getEnemy():
-    global enemy_list
-    sel = random.choice(list(enemy_list.items()))
-    return sel
+    """
+    Returns:
+        (monster_key, info_dict)
+    info_dict contains keys: 'name', 'description', 'emote', 'rarity'
+    """
+    import csv
+    import random
+    path = './resources/monsters.csv'
 
+    rarity_roll = random.randint(1, 100)
+    if rarity_roll <= 50:
+        rarity_target = "1"
+    elif rarity_roll <= 75:
+        rarity_target = "2"
+    elif rarity_roll <= 85:
+        rarity_target = "3"
+    elif rarity_roll <= 94:
+        rarity_target = "4"
+    else:
+        rarity_target = "5"
+
+    candidates = []
+    with open(path, encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            r = row.get('RARITY', '').strip()
+            if r == rarity_target:
+                candidates.append({
+                    'name': row.get('NAME', '').strip(),
+                    'description': row.get('DESCRIPTION', '').strip(),
+                    'emote': row.get('EMOTE', '').strip(),
+                    'rarity': r
+                })
+
+    # fallback: if no candidates for rarity, choose from whole file
+    if not candidates:
+        with open(path, encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                candidates.append({
+                    'name': row.get('NAME', '').strip(),
+                    'description': row.get('DESCRIPTION', '').strip(),
+                    'emote': row.get('EMOTE', '').strip(),
+                    'rarity': row.get('RARITY', '').strip()
+                })
+
+    chosen = random.choice(candidates)
+    key = chosen['name']
+    # Optionally, populate your global enemy_list mapping if you want:
+    enemy_list[key] = chosen
+    return key, chosen
 
 def getFlavour(monster):
     flavour_list = [
@@ -241,7 +180,7 @@ async def newEmbed(flavour, monster, time, health, maxhealth, actions='ATTACKS..
         alive_text = t_alive_text
 
     embed = disnake.Embed(title=f"{flavour}",
-                          description=f"{monster}", color=color)
+                          description=f"{monster_info['emote']}", color=color)
     embed.add_field(name="Monster Information", value=description, inline=False)
     embed.add_field(name="MONSTER HP", value=f"{health} / {maxhealth}", inline=True)
     if actions: embed.add_field(name=actions, value=time, inline=True)
@@ -307,7 +246,12 @@ async def mercyHandler(interaction):
     # the player has not shown mercy yet
     player_mercy.append(interaction.author.id)
 
-    happyEmbed = disnake.Embed(title='Show some MERCY, human!', description=f"You choose to show mercy to the monster.\nThey are currently { int((len(player_mercy) / spare_min) * 100) }% spared", color = disnake.Colour.yellow())
+    if int((len(player_mercy) / spare_min) * 100) >= 100:
+        add_str = "\nIf they survive until the end of the turn, they will be spared!"
+    else:
+        add_str = ""
+
+    happyEmbed = disnake.Embed(title='Show some MERCY, human!', description=f"You choose to show mercy to the monster.\nThey are currently { int((len(player_mercy) / spare_min) * 100) }% spared{add_str}", color = disnake.Colour.yellow())
     happyEmbed.set_footer(text="If you betray your mercy, they won't trust you again!")
     await interaction.send(embed=happyEmbed, ephemeral=True)
     return
@@ -413,7 +357,8 @@ async def play_game(channel, bot2, optional_argument=None):
         monster_HP_MAX = 1
 
     if channel.id == 774573426689048586:
-        monster_HP_MAX = 1000
+        #monster_HP_MAX = 1000
+        pass
 
     monster_HP = monster_HP_MAX
     turnTime = 60
@@ -679,11 +624,17 @@ async def play_game(channel, bot2, optional_argument=None):
                 if current_recruits is None:
                     current_recruits = {}
                 else:
+                    current_recruits = current_recruits[0]
                     current_recruits = json.loads(current_recruits)
+
+                temp_monster_data = enemy_list[mname]
+
+                rec_str = f"{temp_monster_data['emote']} - \"{mname}\""
+
                 if mname in current_recruits:
-                    current_recruits[mname] = current_recruits[mname] + 1
+                    current_recruits[rec_str] = current_recruits[rec_str] + 1
                 else:
-                    current_recruits[mname] = 1
+                    current_recruits[rec_str] = 1
                 db.set_game_data("Battlebot", c_m, json.dumps(current_recruits))
 
     else:

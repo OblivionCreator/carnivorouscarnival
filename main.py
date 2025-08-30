@@ -5,6 +5,7 @@ import sys
 import time
 import typing
 import random
+import io
 from config import load_config
 import fastapi
 from fastapi import responses
@@ -455,6 +456,40 @@ class GameStateManager:
         """
         db.award_tickets(ticket_adjustment, user, "Moderator action")
         await inter.send("Tokens adjusted", ephemeral=True)
+
+    @bot.slash_command(name="recruits", guild_ids=[770428394918641694])
+    async def recruits(self, inter: disnake.ApplicationCommandInteraction, user: disnake.Member = None, hidden:bool = True):
+        """
+        Views the recruits for yourself or any other player.
+
+        Parameters
+        ----------
+        user: The user to check
+        """
+        game_data = db.get_game_data("Battlebot", user or inter.author)
+
+        if game_data:
+            recruits = json.loads(game_data[0])
+        else:
+            recruits = {}
+
+        recruit_msg = """# Your Recruits:\n"""
+
+        if recruits:
+            for rec in recruits:
+                recruit_msg += f"**{recruits[rec]}x**: {rec}\n"
+        else:
+            recruit_msg += "None!"
+
+        file = None
+
+        if len(recruit_msg) > 2000:
+            bb = io.BytesIO(recruit_msg.encode("utf-8"))
+            file = disnake.File(bb)
+            file.filename = f'{inter.author} recruits.txt'
+            await inter.send("Your list of recruits is too big! Please see attached .txt file.", file=file, ephemeral=hidden)
+        else:
+            await inter.send(recruit_msg[:2000], ephemeral=hidden)
 
 @web.get("/api/consume_session")
 async def consume_session(session: str):

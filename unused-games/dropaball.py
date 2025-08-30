@@ -7,7 +7,7 @@ def __init__():
     return
 
 async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake.ext.commands.Bot, _: str, __: str | None = None):
-    base_url = "https://rutdiscord.github.io/halloween2023/plinko/"
+    base_url = "https://rutdiscord.github.io/cc_assets/plinko/"
     token = db.create_web_game_session(member,"Drop A Ball",additional_context={"Game":"Drop A Ball"})
     embed = disnake.Embed(title="Drop A Ball")
     embed.add_field(name="Click the link to play:" , value=base_url+"?token="+token)
