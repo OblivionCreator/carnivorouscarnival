@@ -239,12 +239,12 @@ async def play_game(thread: disnake.Thread, member: disnake.Member, bot: disnake
         await message.edit(f"```Dodge the cars to accumulate score! Get hit 3 times and you lose!\nSCORE: {road_manager.score} | HITS: {road_manager.hits}\n{final_road_str}```", components=components)
         await asyncio.sleep(1)
 
-        if road_manager.score >= 1000 or road_manager.hits >= 3:
+        if road_manager.score >= 500 or road_manager.hits >= 3:
             game_active = False
             break
 
     bot.remove_listener(on_race_press)
-    if road_manager.score >= 1000:
+    if road_manager.score >= 500:
         end_game_message = f"```Congratulations! You managed to survive the Race! You won {road_manager.score} Tickets."
         if random.randint(1, 3) == 1:
 

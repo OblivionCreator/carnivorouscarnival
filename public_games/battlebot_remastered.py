@@ -206,7 +206,7 @@ loss = False
 fight_average = [0]
 player_mercy = []
 mercy_blacklist = []
-spare_min = 1 # This will be set to 50% of the participants of the previous battle.
+spare_min = 5 # This will be set to 50% of the participants of the previous battle.
 
 async def attackHandler(interaction):
     global monster_HP, hitpoints, lastAttacker
@@ -258,7 +258,7 @@ async def mercyHandler(interaction):
 
 async def candyHandler(interaction):
     global hitpoints
-    cur_can = getCandies(interaction.author)
+    cur_can = getCandies(interaction.author) or 0
     candyToLose = 0
 
     if cur_can < candyToLose:
@@ -325,10 +325,11 @@ async def play_game(channel, bot2, optional_argument=None):
     flavour = getFlavour(mname)
 
     # mercy handling
-    spare_min = int(len(old_userList) / 2)
-    if spare_min < 5:
-        spare_min = 5
-    spare_min = 1
+    spare_min = int(len(old_userList) / 1.5)
+    if spare_min < 7:
+        spare_min = 7
+
+    print(f"spare min: {spare_min}")
 
     player_mercy = []
     mercy_blacklist = []
@@ -367,7 +368,6 @@ async def play_game(channel, bot2, optional_argument=None):
 
     battleOngoing = True
     turn = True
-    print(battleTime)
     turnCount = 0
     lastAttacker = None
 
@@ -554,6 +554,8 @@ async def play_game(channel, bot2, optional_argument=None):
 
         if len(player_mercy) >= spare_min:
             spared = True
+            print(f"number of spares: {len(player_mercy)}")
+            print(player_mercy)
         else:
             spared = False
 
@@ -715,7 +717,6 @@ async def attack(action, player_hp):
         dmgDone[action.author.id] = attackDmg
     else:
         dmgDone[action.author.id] = dmgDone[action.author.id] + attackDmg
-    print(dmgDone)
 
     return attackDmg, player_hp
 

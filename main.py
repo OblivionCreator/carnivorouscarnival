@@ -244,8 +244,8 @@ class GameStateManager:
             components = []
             shop_menu = disnake.ui.ActionRow()
             for prize in current_prizes:
-                embed.add_field(name=f"{(prize[3] + 1) * 500} Tickets | {prize[1]}", value=prize[2])
-                shop_menu.add_button(style=disnake.ButtonStyle.blurple, label=f"{prize[1]} | {(prize[3] + 1) * 500} Tickets", custom_id=f"{uid}-{prize[0]}")
+                embed.add_field(name=f"{(prize[3] + 1) * 650} Tickets | {prize[1]}", value=prize[2])
+                shop_menu.add_button(style=disnake.ButtonStyle.blurple, label=f"{prize[1]} | {(prize[3] + 1) * 650} Tickets", custom_id=f"{uid}-{prize[0]}")
             lootbox_menu = disnake.ui.ActionRow()
             lootbox_menu.add_button(style=disnake.ButtonStyle.green, label="Prize Crate | 2000 Tickets", custom_id=f"{uid}-{2000}")
             components.append(shop_menu)
