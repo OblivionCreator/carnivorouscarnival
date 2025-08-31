@@ -232,7 +232,7 @@ class GameStateManager:
         # Builds the Embed
 
         embed = disnake.Embed(title="Welcome to the SHOP!", description="Buy yourself some DISCOUNT prizes!!")
-        embed.add_field(name="1000 Tickets | Prize Crate", value="Guaranteed to contain a prize of some sort.\nWarning: Content Quality is not Guaranteed.")
+        embed.add_field(name="2000 Tickets | Prize Crate", value="Guaranteed to contain a prize of some sort.\nWarning: Content Quality is not Guaranteed.")
 
 
         random.seed(time_seed)
@@ -247,7 +247,7 @@ class GameStateManager:
                 embed.add_field(name=f"{(prize[3] + 1) * 500} Tickets | {prize[1]}", value=prize[2])
                 shop_menu.add_button(style=disnake.ButtonStyle.blurple, label=f"{prize[1]} | {(prize[3] + 1) * 500} Tickets", custom_id=f"{uid}-{prize[0]}")
             lootbox_menu = disnake.ui.ActionRow()
-            lootbox_menu.add_button(style=disnake.ButtonStyle.green, label="Prize Crate | 1000 Tickets", custom_id=f"{uid}-{1000}")
+            lootbox_menu.add_button(style=disnake.ButtonStyle.green, label="Prize Crate | 2000 Tickets", custom_id=f"{uid}-{2000}")
             components.append(shop_menu)
             components.append(lootbox_menu)
             return components
@@ -264,18 +264,18 @@ class GameStateManager:
                 data = int(inter2.data.custom_id.split('-')[1])
                 user_tickets = db.get_tickets(inter2.author)
 
-                if data == 1000:
-                    if user_tickets < 1000:
-                        await inter2.send(f"You do not have enough tickets to purchase this prize! This prize costs 1000 Tickets, but you've only got {user_tickets}!", ephemeral=True)
+                if data == 2000:
+                    if user_tickets < 2000:
+                        await inter2.send(f"You do not have enough tickets to purchase this prize! This prize costs 2000 Tickets, but you've only got {user_tickets}!", ephemeral=True)
                         return
                     else:
-                        db.award_tickets(-1000, inter2.author, 'Shop')
-                        chance = random.randint(1,20)
-                        if chance <= 7:
+                        db.award_tickets(-2000, inter2.author, 'Shop')
+                        chance = random.randint(1,30)
+                        if chance <= 17:
                             rarity = 0
-                        elif chance <= 14:
+                        elif chance <= 24:
                             rarity = 1
-                        elif chance <= 18:
+                        elif chance <= 29:
                             rarity = 2
                         else:
                             rarity = 3
@@ -286,7 +286,7 @@ class GameStateManager:
                     prize_list_cur = db.db.execute("select * from prizes")
                     prize_list = prize_list_cur.fetchall()
                     selected_prize = prize_list[data]
-                    prize_cost = (selected_prize[3]+1)*500
+                    prize_cost = (selected_prize[3]+1)*650
                     if user_tickets < prize_cost:
                         await inter2.send(f"You do not have enough tickets to purchase this prize! This prize costs {prize_cost} Tickets, but you've only got {user_tickets}!", ephemeral=True)
                         return
@@ -295,9 +295,11 @@ class GameStateManager:
                         db.award_tickets((0-prize_cost), inter2.author, 'Shop')
                         await inter2.send(f"Congratulations! You have obtained a {selected_prize[1]}!\nYou can view your inventory with `/inv`", ephemeral=True)
                 return
-            new_shop_menu = create_dropdown()
-            await message.edit(components=[])
-            await message.edit(components=new_shop_menu)
+            if message:
+                new_shop_menu = create_dropdown()
+                await message.edit(components=[])
+                await message.edit(components=new_shop_menu)
+
     @bot.slash_command(name="inv")
     async def inventory(self, inter: disnake.ApplicationCommandInteraction, user:disnake.Member = None):
 
@@ -457,7 +459,7 @@ class GameStateManager:
         db.award_tickets(ticket_adjustment, user, "Moderator action")
         await inter.send("Tokens adjusted", ephemeral=True)
 
-    @bot.slash_command(name="recruits", guild_ids=[770428394918641694])
+    @bot.slash_command(name="recruits", guild_ids=[770428394918641694, 120330239996854274])
     async def recruits(self, inter: disnake.ApplicationCommandInteraction, user: disnake.Member = None, hidden:bool = True):
         """
         Views the recruits for yourself or any other player.
