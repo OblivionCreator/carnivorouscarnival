@@ -97,6 +97,7 @@ class GameStateManager:
             game_name = random.choice(list(self.public_game_list.keys()))
             game_name = typing.cast(str, game_name)
         game = self.public_game_list[game_name]
+        await target_channel.send("<@&1411743700031373403>\nA new game is starting!")
         await game(target_channel, bot, optional_argument)
 
     @bot.slash_command(name="play_public")
