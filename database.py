@@ -157,12 +157,6 @@ class Database:
                 "INSERT INTO game_data (game, user, data) VALUES (?, ?, ?)", (game, user.id, data))
         self.db.commit()
 
-    # Sets up the Prize Database from store.json
-    # This fucking code. DID NOT. Work. NO matter what we did.
-    # The database was ALWAYS locked.
-    # After an hour of troubleshooting, I said "fuck it" and asked ChatGPT to try and fix it instead
-    # ChatGPT changed it from 'db = sqlite3.connect(file)' to 'with sqlite3.connect(file) as db:' IN THEORY, this should be identical to what we already did.
-    # I have no fucking idea why that worked. But it did. So I am documenting my insanity here.
 def prize_setup(file: str):
     try:
         with sqlite3.connect(file) as db:
